@@ -8,7 +8,9 @@ import org.gradle.api.publish.maven.*
 import org.gradle.api.publish.maven.tasks.*
 import org.gradle.jvm.tasks.*
 import org.gradle.kotlin.dsl.*
+import org.gradle.kotlin.dsl.resolver.*
 import org.gradle.plugins.signing.*
+import org.jetbrains.kotlin.konan.properties.*
 import java.util.concurrent.locks.*
 
 fun isAvailableForPublication(publication: Publication): Boolean {
@@ -20,32 +22,34 @@ fun isAvailableForPublication(publication: Publication): Boolean {
         "jvm",
         "androidRelease",
         "androidDebug",
-        "js",
+//        "js",
         "metadata",
         "kotlinMultiplatform"
     )
     result = result || name in jvmAndCommon
-    result = result || (HOST_NAME == "linux" && (name == "linuxX64" || name == "linuxArm64"))
-    result = result || (HOST_NAME == "windows" && name == "mingwX64")
+//    result = result || (HOST_NAME == "linux" && (name == "linuxX64" || name == "linuxArm64"))
+//    result = result || (HOST_NAME == "windows" && name == "mingwX64")
     val macPublications = setOf(
         "iosX64",
         "iosArm64",
         "iosSimulatorArm64",
 
-        "watchosX64",
-        "watchosArm32",
-        "watchosArm64",
-        "watchosSimulatorArm64",
+//        "watchosX64",
+//        "watchosArm32",
+//        "watchosArm64",
+//        "watchosSimulatorArm64",
 
-        "tvosX64",
-        "tvosArm64",
-        "tvosSimulatorArm64",
+//        "tvosX64",
+//        "tvosArm64",
+//        "tvosSimulatorArm64",
 
-        "macosX64",
-        "macosArm64"
+//        "macosX64",
+//        "macosArm64"
     )
 
     result = result || (HOST_NAME == "macos" && name in macPublications)
+
+    System.err.println("[garrison] setting up maven publishing for $name")
 
     return result
 }
@@ -59,15 +63,17 @@ fun Project.configurePublication() {
         onlyIf { isAvailableForPublication(publication) }
     }
 
-    val publishingUser: String? = System.getenv("PUBLISHING_USER")
-    val publishingPassword: String? = System.getenv("PUBLISHING_PASSWORD")
+    val localProperties = loadProperties(rootProject.file("local.properties").absolutePath)
+
+    val publishingUser: String? = localProperties.getProperty("maven.username")
+    val publishingPassword: String? = localProperties.getProperty("maven.password")
 
     val repositoryId: String? = System.getenv("REPOSITORY_ID")
     val publishingUrl: String? = if (repositoryId?.isNotBlank() == true) {
         println("Set publishing to repository $repositoryId")
         "https://oss.sonatype.org/service/local/staging/deployByRepositoryId/$repositoryId"
     } else {
-        System.getenv("PUBLISHING_URL")
+        localProperties.getProperty("maven.url")
     }
 
     val publishLocal: Boolean by rootProject.extra
@@ -84,6 +90,7 @@ fun Project.configurePublication() {
                 if (publishLocal) {
                     setUrl(globalM2)
                 } else {
+                    name = localProperties.getProperty("maven.name")
                     publishingUrl?.let { setUrl(it) }
                     credentials {
                         username = publishingUser

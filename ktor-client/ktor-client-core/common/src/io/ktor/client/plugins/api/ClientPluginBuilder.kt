@@ -28,7 +28,7 @@ public class ClientPluginBuilder<PluginConfig : Any> internal constructor(
     /**
      * A configuration of the current plugin.
      */
-    public val pluginConfig: PluginConfig
+    public val pluginConfig: PluginConfig,
 ) {
 
     internal val hooks: MutableList<HookHandler<*>> = mutableListOf()

@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.buildtools.api.*
 import org.jetbrains.kotlin.gradle.dsl.*
 import org.jetbrains.kotlin.gradle.targets.js.*
 import org.jetbrains.kotlin.gradle.targets.jvm.tasks.*
+import org.jetbrains.kotlin.gradle.tasks.*
 import org.jetbrains.kotlin.konan.target.*
 
 buildscript {
@@ -142,6 +143,15 @@ allprojects {
     val skipPublish: List<String> by rootProject.extra
     if (!skipPublish.contains(project.name)) {
         configurePublication()
+    }
+
+    // Kotlin 1.9.20 started putting the library version in the klib manifest, but that broke resolution
+    // in downstream projects! Hack the klib library version to be 'unspecified', which is what the
+    // CInteropProcess task did in prior releases. https://youtrack.jetbrains.com/issue/KT-62515/
+    tasks.withType<CInteropProcess>().configureEach {
+        val libraryVersionField = CInteropProcess::class.java.getDeclaredField("libraryVersion")
+        libraryVersionField.isAccessible = true
+        libraryVersionField.set(this, "unspecified")
     }
 }
 

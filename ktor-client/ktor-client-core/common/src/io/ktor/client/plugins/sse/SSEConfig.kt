@@ -4,6 +4,7 @@
 
 package io.ktor.client.plugins.sse
 
+import io.ktor.util.reflect.*
 import kotlin.time.*
 import kotlin.time.Duration.Companion.milliseconds
 

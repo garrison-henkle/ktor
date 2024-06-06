@@ -11,12 +11,13 @@ import kotlin.time.*
 
 @InternalAPI
 public class SSEClientContent(
+    headers: HeadersBuilder,
     public val reconnectionTime: Duration,
     public val showCommentEvents: Boolean,
     public val showRetryEvents: Boolean,
 ) : OutgoingContent.NoContent() {
 
-    override val headers: Headers = HeadersBuilder().apply {
+    override val headers: Headers = headers.apply {
         append(HttpHeaders.Accept, ContentType.Text.EventStream)
         append(HttpHeaders.CacheControl, "no-store")
     }.build()

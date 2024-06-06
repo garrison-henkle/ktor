@@ -39,7 +39,7 @@ public object SSECapability : HttpClientEngineCapability<Unit> {
 @OptIn(InternalAPI::class)
 public val SSE: ClientPlugin<SSEConfig> = createClientPlugin(
     name = "SSE",
-    createConfiguration = ::SSEConfig
+    createConfiguration = ::SSEConfig,
 ) {
     val reconnectionTime = pluginConfig.reconnectionTime
     val showCommentEvents = pluginConfig.showCommentEvents
@@ -54,16 +54,17 @@ public val SSE: ClientPlugin<SSEConfig> = createClientPlugin(
         val localShowRetryEvents = getAttributeValue(request, showRetryEventsAttr)
 
         SSEClientContent(
-            localReconnectionTime ?: reconnectionTime,
-            localShowCommentEvents ?: showCommentEvents,
-            localShowRetryEvents ?: showRetryEvents
+            headers = request.headers,
+            reconnectionTime = localReconnectionTime ?: reconnectionTime,
+            showCommentEvents = localShowCommentEvents ?: showCommentEvents,
+            showRetryEvents = localShowRetryEvents ?: showRetryEvents
         )
     }
 
     client.responsePipeline.intercept(HttpResponsePipeline.Transform) { (info, session) ->
         val response = context.response
         val status = response.status
-        val contentType = response.headers[HttpHeaders.ContentType]
+        val contentType = response.contentType()
         val requestContent = response.request.content
 
         if (requestContent !is SSEClientContent) {
@@ -73,7 +74,7 @@ public val SSE: ClientPlugin<SSEConfig> = createClientPlugin(
         if (status != HttpStatusCode.OK) {
             throw SSEException("Expected status code ${HttpStatusCode.OK.value} but was: ${status.value}")
         }
-        if (contentType != ContentType.Text.EventStream.toString()) {
+        if (contentType?.withoutParameters() != ContentType.Text.EventStream) {
             throw SSEException("Expected Content-Type ${ContentType.Text.EventStream} but was: $contentType")
         }
         if (session !is ClientSSESession) {
